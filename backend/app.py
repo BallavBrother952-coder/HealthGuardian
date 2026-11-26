@@ -4,7 +4,7 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from google import genai
 
@@ -748,6 +748,116 @@ def get_appointments():
         return jsonify({
             "success": False,
             "message": "Unable to retrieve appointments"
+        }), 500
+
+    finally:
+        connection.close()
+@app.route("/api/appointments/<int:appointment_id>/status", methods=["PUT"])
+def update_appointment_status(appointment_id):
+    data = request.get_json()
+
+    if not data or "status" not in data:
+        return jsonify({
+            "success": False,
+            "message": "Status is required"
+        }), 400
+
+    status = str(data["status"]).strip().title()
+
+    valid_statuses = [
+        "Waiting",
+        "In Progress",
+        "Completed",
+        "Cancelled"
+    ]
+
+    if status not in valid_statuses:
+        return jsonify({
+            "success": False,
+            "message": "Invalid appointment status"
+        }), 400
+
+    connection = get_db_connection()
+
+    try:
+        cursor = connection.execute(
+            "UPDATE appointments SET status = ? WHERE id = ?",
+            (status, appointment_id)
+        )
+
+        connection.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({
+                "success": False,
+                "message": "Appointment not found"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "message": "Appointment status updated successfully",
+            "status": status
+        }), 200
+
+    except Exception:
+        app.logger.exception("Appointment status update error")
+        return jsonify({
+            "success": False,
+            "message": "Unable to update appointment status"
+        }), 500
+
+    finally:
+        connection.close()
+@app.route("/api/login", methods=["POST"])
+def login_user():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({
+            "success": False,
+            "message": "Email and password are required"
+        }), 400
+
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+
+    if not email or not password:
+        return jsonify({
+            "success": False,
+            "message": "Email and password are required"
+        }), 400
+
+    connection = get_db_connection()
+
+    try:
+        user = connection.execute(
+            "SELECT * FROM users WHERE email = ?",
+            (email,)
+        ).fetchone()
+
+        if user is None or not check_password_hash(
+            user["password_hash"], password
+        ):
+            return jsonify({
+                "success": False,
+                "message": "Invalid email or password"
+            }), 401
+
+        return jsonify({
+            "success": True,
+            "message": "Login successful!",
+            "user": {
+                "id": user["id"],
+                "name": user["name"],
+                "email": user["email"]
+            }
+        }), 200
+
+    except Exception:
+        app.logger.exception("Login error")
+        return jsonify({
+            "success": False,
+            "message": "Login failed"
         }), 500
 
     finally:
