@@ -1,83 +1,49 @@
-
-import { useState } from 'react'
-import {
-  speakMessage,
-  startListening
-} from '../voice/voice'
+﻿import { useState } from 'react'
+import { speakMessage, startListening } from '../../../voice/voice.js'
 
 function VoiceAssistant() {
   const [language, setLanguage] = useState('bengali')
   const [transcript, setTranscript] = useState('')
-  const [response, setResponse] = useState('')
-  const [listening, setListening] = useState(false)
+  const [status, setStatus] = useState('Ready')
 
-  const handleListen = () => {
-    setTranscript('')
-    setResponse('')
-    setListening(true)
+  const messages = {
+    bengali: 'স্বাগতম। এটি Health Guardian-এর ডেমো ভয়েস অ্যাসিস্ট্যান্ট।',
+    hindi: 'स्वागत है। यह Health Guardian का डेमो वॉइस असिस्टेंट है।',
+    english: 'Welcome. This is the Health Guardian demo voice assistant.'
+  }
 
-    const recognition = startListening(language, (text) => {
-      setTranscript(text)
-      setListening(false)
-
-      const reply = `আপনি বলেছেন: ${text}। আরও স্বাস্থ্য সংক্রান্ত তথ্যের জন্য চিকিৎসকের পরামর্শ নিন।`
-
-      setResponse(reply)
-      speakMessage(reply, language)
-    })
-
-    if (!recognition) {
-      setListening(false)
-      setResponse('Your browser does not support voice recognition.')
-    } else {
-      recognition.onend = () => setListening(false)
+  const listen = () => {
+    setStatus('Listening...')
+    try {
+      startListening(language, (result) => {
+        setTranscript(result)
+        setStatus('Speech received')
+      })
+    } catch {
+      setStatus('Voice recognition is not available.')
     }
   }
 
-  const stopSpeaking = () => {
-    window.speechSynthesis.cancel()
+  const speak = () => {
+    speakMessage(messages[language], language)
+    setStatus('Speaking demo message')
   }
 
   return (
-    <section id="voice" className="voice-section">
-      <h2>🎤 Voice Assistant</h2>
-      <p>Talk to your Health Guardian in your preferred language.</p>
-
-      <label>Select Language</label>
-      <select
-        value={language}
-        onChange={(e) => setLanguage(e.target.value)}
-      >
+    <section className="voice" id="voice">
+      <h2>🎙️ Voice Assistant</h2>
+      <p>Demo voice assistant. Do not share private medical information.</p>
+      <select value={language} onChange={e => setLanguage(e.target.value)}>
         <option value="bengali">বাংলা</option>
         <option value="hindi">हिन्दी</option>
         <option value="english">English</option>
       </select>
-
-      <div className="voice-box">
-        <div className="mic-icon">
-          🎙️
-        </div>
-
-        <h3>{listening ? 'Listening...' : 'Ready to Listen'}</h3>
-
-        <button onClick={handleListen} disabled={listening}>
-          {listening ? 'Listening...' : '🎤 Start Listening'}
-        </button>
-
-        <button onClick={stopSpeaking}>
-          Stop Speaking
-        </button>
+      <div>
+        <button onClick={listen}>🎤 Start Listening</button>
+        <button onClick={speak}>🔊 Speak Demo Message</button>
       </div>
-
-      <div className="voice-output">
-        <h3>📝 Your Voice Input</h3>
-        <p>{transcript || 'Your spoken words will appear here.'}</p>
-      </div>
-
-      <div className="voice-output">
-        <h3>🔊 Assistant Response</h3>
-        <p>{response || 'Assistant response will appear here.'}</p>
-      </div>
+      <p>Status: {status}</p>
+      <p>Recognized text: {transcript || 'Nothing received yet'}</p>
     </section>
   )
 }
