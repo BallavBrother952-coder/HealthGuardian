@@ -4,6 +4,10 @@ import './App.css'
 import Navbar from './components/Navbar'
 import MedicineReminder from './components/MedicineReminder'
 import BloodDonor from './components/BloodDonor'
+import PatientMonitoring from './components/PatientMonitoring'
+import AIChatbot from './components/AIChatbot'
+import QueueManagement from './components/QueueManagement'
+import VoiceAssistant from './components/VoiceAssistant'
 
 function App() {
   const [checkin, setCheckin] = useState('')
@@ -44,6 +48,10 @@ function App() {
 
         <MedicineReminder />
         <BloodDonor />
+        <PatientMonitoring />
+        <VoiceAssistant />
+        <AIChatbot />
+        <QueueManagement />
 
         <section className="checkin">
           <h2>👤 Patient Check-in</h2>
